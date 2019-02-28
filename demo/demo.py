@@ -96,8 +96,8 @@ base = os.path.basename(fname)
 obase = base.replace('.wnum.mp4', '.wlabel.mp4')
 output_dir = args.output_dir
 
-odata = output_dir + '/' + base.replace('.wnum.mp4', '.parquet')
-print('Output predictions at:\n{}'.format(odata))
+# odata = output_dir + '/' + base.replace('.wnum.mp4', '.parquet')
+# print('Output predictions at:\n{}'.format(odata))
 
 if args.output_video:
     opath = output_dir + '/' + obase
@@ -118,7 +118,7 @@ for frame_num in tqdm.tqdm(range(tot), total=tot):
     assert r, 'failed to read?'
     box_logits = coco_demo.run_on_opencv_image(f)
     # has 1000 boxes x 80 class logits.
-    frame_maxes = box_logits.softmax(dim=-1).max(dim=1)[0]
+    frame_maxes = box_logits.softmax(dim=-1).max(dim=0)[0]
     # shape should be max box score per class, so 80x1
     #print(type(predictions), predictions.shape, predictions)
 
@@ -137,5 +137,5 @@ for frame_num in tqdm.tqdm(range(tot), total=tot):
     #     ))
     nparr.append(frame_maxes.cpu())
 
-max_logits = torch.stack(frame_maxes)
+max_logits = torch.stack(nparr)
 torch.save(max_logits, './max_logits.pth')
