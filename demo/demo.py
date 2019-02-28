@@ -138,5 +138,7 @@ for frame_num in tqdm.tqdm(range(tot), total=tot):
     #     ))
     nparr.append(frame_maxes.cpu())
 
-max_logits = torch.stack(nparr)
-torch.save(max_logits, './max_logits.pth')
+max_scores= torch.stack(nparr)
+assert max_scores.shape[0] == tot # tot frames
+assert max_scores.shape[1] == 81 # 81 classes
+torch.save(max_scores, './max_scores.pth')
