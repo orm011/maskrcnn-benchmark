@@ -160,31 +160,30 @@ class COCODemo(object):
         return transform
 
 
+    def max_scores(self, image):
+        box_logits = self.run_on_opencv_image(image)
+        frame_maxes = box_logits.softmax(dim=-1).max(dim=0)[0]
+        return frame_maxes
 
     def run_on_opencv_image(self, image):
         """
         Arguments:
             image (np.ndarray): an image as returned by OpenCV
-
-        Returns:
-            prediction (BoxList): the detected objects. Additional information
-                of the detection properties can be found in the fields of
-                the BoxList via `prediction.fields()`
         """
         predictions = self.compute_prediction(image)
         return predictions
-
-        top_predictions = self.select_top_predictions(predictions)
-
-        result = image.copy()
-        if self.show_mask_heatmaps:
-            return self.create_mask_montage(result, top_predictions), predictions
-        result = self.overlay_boxes(result, top_predictions)
-        if self.cfg.MODEL.MASK_ON:
-            result = self.overlay_mask(result, top_predictions)
-        result = self.overlay_class_names(result, top_predictions)
-
-        return result, predictions
+        #
+        # top_predictions = self.select_top_predictions(predictions)
+        #
+        # result = image.copy()
+        # if self.show_mask_heatmaps:
+        #     return self.create_mask_montage(result, top_predictions), predictions
+        # result = self.overlay_boxes(result, top_predictions)
+        # if self.cfg.MODEL.MASK_ON:
+        #     result = self.overlay_mask(result, top_predictions)
+        # result = self.overlay_class_names(result, top_predictions)
+        #
+        # return result, predictions
 
     def compute_prediction(self, original_image):
         """

@@ -116,9 +116,10 @@ nparr =[]
 for frame_num in tqdm.tqdm(range(tot), total=tot):
     r,f = vid.read()
     assert r, 'failed to read?'
-    box_logits = coco_demo.run_on_opencv_image(f)
-    # has 1000 boxes x 80 class logits.
-    frame_maxes = box_logits.softmax(dim=-1).max(dim=0)[0]
+    frame_maxes = coco_demo.max_scores(f)
+    # box_logits = coco_demo.run_on_opencv_image(f)
+    # # has 1000 boxes x 80 class logits.
+    # frame_maxes = box_logits.softmax(dim=-1).max(dim=0)[0]
     # shape should be max box score per class, so 80x1
     #print(type(predictions), predictions.shape, predictions)
 
