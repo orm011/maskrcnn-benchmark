@@ -117,6 +117,9 @@ for frame_num in tqdm.tqdm(range(tot), total=tot):
     r,f = vid.read()
     assert r, 'failed to read?'
     box_logits = coco_demo.run_on_opencv_image(f)
+    # has 1000 boxes x 80 class logits.
+    frame_maxes = box_logits.softmax(dim=-1).max(dim=1)[0]
+    # shape should be max box score per class, so 80x1
     #print(type(predictions), predictions.shape, predictions)
 
     # if args.output_video:
@@ -132,13 +135,7 @@ for frame_num in tqdm.tqdm(range(tot), total=tot):
     #      ('box_x1', dat.bbox[:,2]),
     #      ('box_y1', dat.bbox[:,3])]
     #     ))
-    nparr.append(box_logits.cpu())
+    nparr.append(frame_maxes.cpu())
 
-all_logits = torch.stack(nparr)
-torch.save(all_logits, './all_logits.pth')
-# adf = pd.concat(dfs, ignore_index=True)
-# adf.to_parquet(odata)
-
-# if args.output_video:
-#     wr.release()
-#     print('Output video was written to:\n{}'.format(opath))
+max_logits = torch.stack(frame_maxes)
+torch.save(max_logits, './max_logits.pth')
