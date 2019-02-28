@@ -20,9 +20,12 @@ class CombinedROIHeads(torch.nn.ModuleDict):
     def forward(self, features, proposals, targets=None):
         losses = {}
         # TODO rename x to roi_box_features, if it doesn't increase memory consumption
-        x, detections, loss_box = self.box(features, proposals, targets)
+        #x, detections, loss_box = self.box(features, proposals, targets)
+        return self.box(features, proposals, targets) # box logits
+
         losses.update(loss_box)
         if self.cfg.MODEL.MASK_ON:
+            assert False
             mask_features = features
             # optimization: during training, if we share the feature extractor between
             # the box and the mask heads, then we can reuse the features already computed
@@ -33,15 +36,21 @@ class CombinedROIHeads(torch.nn.ModuleDict):
                 mask_features = x
             # During training, self.box() will return the unaltered proposals as "detections"
             # this makes the API consistent during training and testing
-            x, detections, loss_mask = self.mask(mask_features, detections, targets)
-            losses.update(loss_mask)
-        return x, detections, losses
+            # x, detections, loss_mask = self.mask(mask_features, detections, targets)
+            #losses.update(loss_mask)
+            return self.mask(mask_features, detections, targets)
+
+        assert False # want logits
+        #return x, detections, losses
 
 
 def build_roi_heads(cfg):
     # individually create the heads, that will be combined together
     # afterwards
     roi_heads = []
+    assert not cfg.MODEL.RPN_ONLY
+    assert cfg.MODEL.MASK_ON
+
     if not cfg.MODEL.RPN_ONLY:
         roi_heads.append(("box", build_roi_box_head(cfg)))
     if cfg.MODEL.MASK_ON:

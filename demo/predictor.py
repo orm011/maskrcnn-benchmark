@@ -159,6 +159,8 @@ class COCODemo(object):
         )
         return transform
 
+
+
     def run_on_opencv_image(self, image):
         """
         Arguments:
@@ -170,17 +172,19 @@ class COCODemo(object):
                 the BoxList via `prediction.fields()`
         """
         predictions = self.compute_prediction(image)
+        return predictions
+
         top_predictions = self.select_top_predictions(predictions)
 
         result = image.copy()
         if self.show_mask_heatmaps:
-            return self.create_mask_montage(result, top_predictions)
+            return self.create_mask_montage(result, top_predictions), predictions
         result = self.overlay_boxes(result, top_predictions)
         if self.cfg.MODEL.MASK_ON:
             result = self.overlay_mask(result, top_predictions)
         result = self.overlay_class_names(result, top_predictions)
 
-        return result
+        return result, predictions
 
     def compute_prediction(self, original_image):
         """
@@ -200,24 +204,28 @@ class COCODemo(object):
         image_list = image_list.to(self.device)
         # compute predictions
         with torch.no_grad():
-            predictions = self.model(image_list)
-        predictions = [o.to(self.cpu_device) for o in predictions]
+            logits = self.model(image_list)
+
+        #predictions = [o.to(self.cpu_device) for o in predictions]
+        #logits = logits.to(self.cpu_device)
+        #print logits.shape
+        return logits
 
         # always single image is passed at a time
-        prediction = predictions[0]
-
-        # reshape prediction (a BoxList) into the original image size
-        height, width = original_image.shape[:-1]
-        prediction = prediction.resize((width, height))
-
-        if prediction.has_field("mask"):
-            # if we have masks, paste the masks in the right position
-            # in the image, as defined by the bounding boxes
-            masks = prediction.get_field("mask")
-            # always single image is passed at a time
-            masks = self.masker([masks], [prediction])[0]
-            prediction.add_field("mask", masks)
-        return prediction
+        # prediction = predictions[0]
+        #
+        # # reshape prediction (a BoxList) into the original image size
+        # height, width = original_image.shape[:-1]
+        # prediction = prediction.resize((width, height))
+        #
+        # if prediction.has_field("mask"):
+        #     # if we have masks, paste the masks in the right position
+        #     # in the image, as defined by the bounding boxes
+        #     masks = prediction.get_field("mask")
+        #     # always single image is passed at a time
+        #     masks = self.masker([masks], [prediction])[0]
+        #     prediction.add_field("mask", masks)
+        # return prediction
 
     def select_top_predictions(self, predictions):
         """
@@ -310,7 +318,7 @@ class COCODemo(object):
         masks = predictions.get_field("mask")
         masks_per_dim = self.masks_per_dim
         masks = L.interpolate(
-            masks.float(), scale_factor=1 / masks_per_dim
+            masks.float(), scale_factor=1. / masks_per_dim
         ).byte()
         height, width = masks.shape[-2:]
         max_masks = masks_per_dim ** 2
@@ -353,7 +361,7 @@ class COCODemo(object):
             x, y = box[:2]
             s = template.format(label, score)
             cv2.putText(
-                image, s, (x, y), cv2.FONT_HERSHEY_SIMPLEX, .5, (255, 255, 255), 1
+                image, s, (x, y), cv2.FONT_HERSHEY_SIMPLEX, .5, (255, 255, 255), 2
             )
 
         return image
