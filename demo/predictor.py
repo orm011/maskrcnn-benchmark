@@ -160,17 +160,18 @@ class COCODemo(object):
         return transform
 
 
-    def max_scores(self, image):
-        box_logits = self.run_on_opencv_image(image)
-        frame_maxes = box_logits.softmax(dim=-1).max(dim=0)[0]
+    def max_scores(self, images):
+        box_logits = self.run_on_opencv_images(images).reshape((len(images), 1000, 81))
+        frame_maxes = box_logits.softmax(dim=-1).max(dim=1)[0]
+        print(box_logits.shape, frame_maxes.shape)
         return frame_maxes
 
-    def run_on_opencv_image(self, image):
+    def run_on_opencv_images(self, images):
         """
         Arguments:
             image (np.ndarray): an image as returned by OpenCV
         """
-        predictions = self.compute_prediction(image)
+        predictions = self.compute_prediction(images)
         return predictions
         #
         # top_predictions = self.select_top_predictions(predictions)
@@ -185,7 +186,7 @@ class COCODemo(object):
         #
         # return result, predictions
 
-    def compute_prediction(self, original_image):
+    def compute_prediction(self, original_images):
         """
         Arguments:
             original_image (np.ndarray): an image as returned by OpenCV
@@ -196,10 +197,10 @@ class COCODemo(object):
                 the BoxList via `prediction.fields()`
         """
         # apply pre-processing to image
-        image = self.transforms(original_image)
+        images = [self.transforms(original_image) for original_image in original_images]
         # convert to an ImageList, padded so that it is divisible by
         # cfg.DATALOADER.SIZE_DIVISIBILITY
-        image_list = to_image_list(image, self.cfg.DATALOADER.SIZE_DIVISIBILITY)
+        image_list = to_image_list(images, self.cfg.DATALOADER.SIZE_DIVISIBILITY)
         image_list = image_list.to(self.device)
         # compute predictions
         with torch.no_grad():

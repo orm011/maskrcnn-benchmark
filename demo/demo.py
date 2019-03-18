@@ -113,10 +113,14 @@ else:
 import torch
 
 nparr =[]
-for frame_num in tqdm.tqdm(range(tot), total=tot):
-    r,f = vid.read()
-    assert r, 'failed to read?'
-    frame_maxes = coco_demo.max_scores(f)
+BATCH_SIZE = 8
+for frame_num in tqdm.tqdm(range(tot//BATCH_SIZE), total=tot//BATCH_SIZE):
+    batch = []
+    for _ in range(BATCH_SIZE):
+        r, f = vid.read()
+        assert r, 'failed to read?'
+        batch.append(f)
+    frame_maxes = coco_demo.max_scores(batch)
     # box_logits = coco_demo.run_on_opencv_image(f)
     # # has 1000 boxes x 80 class logits.
     # frame_maxes = box_logits.softmax(dim=-1).max(dim=0)[0]
@@ -136,9 +140,10 @@ for frame_num in tqdm.tqdm(range(tot), total=tot):
     #      ('box_x1', dat.bbox[:,2]),
     #      ('box_y1', dat.bbox[:,3])]
     #     ))
-    nparr.append(frame_maxes.cpu())
+    nparr.extend(frame_maxes.cpu())
 
 max_scores= torch.stack(nparr)
+print(max_scores[5, :])
 assert max_scores.shape[0] == tot # tot frames
 assert max_scores.shape[1] == 81 # 81 classes
 torch.save(max_scores, './max_scores.pth')
